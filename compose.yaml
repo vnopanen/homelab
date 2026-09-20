@@ -1,0 +1,70 @@
+
+version: "3.8"
+
+services:
+  adguardhome:
+    image: docker.io/adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3000:3000/tcp" # Web UI setup port (can be closed after initial setup)
+    volumes:
+      - ${HOME}/homelab/data/adguard/work:/opt/adguardhome/work
+      - ${HOME}/homelab/data/adguard/conf:/opt/adguardhome/conf
+    logging: &default-logging
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  vaultwarden:
+    image: docker.io/vaultwarden/server:alpine
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+      - SIGNUPS_ALLOWED=false
+    volumes:
+      - ${HOME}/homelab/data/vaultwarden:/data
+    ports:
+      - "8080:80"
+    logging: *default-logging
+
+  filebrowser:
+    image: docker.io/gtstef/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    cap_add:
+      - NET_BIND_SERVICE
+    volumes:
+      - ${HOME}/homelab/data/filebrowser:/home/filebrowser/data:U,z
+      - ${HOME}/homelab/data/samba/share:/srv:z
+    logging: *default-logging
+
+  samba:
+    image: docker.io/dperson/samba:latest
+    container_name: samba
+    restart: unless-stopped
+    environment:
+      - USERNAME=${SAMBA_USER}
+      - PASSWORD=${SAMBA_PASSWORD}
+      - SHARE=share;/samba-share;yes;no;no;all;none
+    ports:
+      - "445:445"
+      - "139:139"
+    volumes:
+      - ${HOME}/homelab/data/samba/share:/samba-share:z
+    logging: *default-logging
+
+  cloudflared:
+    image: docker.io/cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    logging: *default-logging
