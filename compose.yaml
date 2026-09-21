@@ -1,6 +1,3 @@
-
-version: "3.8"
-
 services:
   adguardhome:
     image: docker.io/adguard/adguardhome:latest
@@ -46,7 +43,7 @@ services:
     logging: *default-logging
 
   samba:
-    image: docker.io/dperson/samba:latest
+    image: docker.io/crazymax/samba:latest
     container_name: samba
     restart: unless-stopped
     environment:
